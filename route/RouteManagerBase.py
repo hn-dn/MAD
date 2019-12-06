@@ -468,9 +468,10 @@ class RouteManagerBase(ABC):
         len_before = len(latest)
         latest = [to_keep for to_keep in latest if not to_keep[0] < delete_before]
         len_after = len(latest)
-        logger.warning("Dropped from {} to {} because of remove_from_queue_backlog. "
-                       "Make sure you have enough workers for your size of the area or "
-                       "adjust the size of the area itself.", len_before, len_after)
+        if len_after < len_before:
+            logger.warning("Dropped from {} to {} because of remove_from_queue_backlog. "
+                           "Make sure you have enough workers for your size of the area or "
+                           "adjust the size of the area itself.", len_before, len_after)
         # TODO: sort latest by modified flag of event
         merged = self.clustering_helper.get_clustered(latest)
         return merged
