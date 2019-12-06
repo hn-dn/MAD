@@ -552,7 +552,7 @@ class RouteManagerBase(ABC):
                     return self.get_next_location(origin)
                 self._last_round_prio[origin] = True
                 self._positiontyp[origin] = 1
-                logger.info("Route {} is moving to {}, {} for a priority event",
+                logger.debug("Route {} is moving to {}, {} for a priority event",
                             self.name, next_coord.lat, next_coord.lng)
                 next_coord = self.check_coord_and_maybe_del(next_coord, origin)
                 if next_coord is None:
