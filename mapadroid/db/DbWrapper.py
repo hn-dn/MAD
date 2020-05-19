@@ -353,6 +353,70 @@ class DbWrapper:
 
         return questinfo
 
+        def raids_from_db(self, neLat=None, neLon=None, swLat=None, swLon=None, oNeLat=None, oNeLon=None,
+                       oSwLat=None, oSwLon=None, timestamp=None, fence=None):
+        """
+        Retrieve all the pokestops valid within the area set by geofence_helper
+        :return: numpy array with coords
+        """
+        logger.debug("DbWrapper::raids_from_db called")
+        questinfo = {}
+
+        query = (
+            "SELECT raid.gym_id, raid.level, raid.spawn, raid.start, raid.end, raid.pokemon_id, raid.cp,  "
+            "raid.move_1, raid.move_2, raid.last_scanned, raid.form, raid.is_exclusive, raid.gender, raid.costume, "
+            " gymdetails.name, gymdetails.url  "
+            "FROM raid INNER JOIN gymdetails ON raid.gym_id = gymdetails.gym_id "
+            "WHERE  raid.end > (NOW() -INTERVAL 2 hour)  "
+        )
+
+        query_where = ""
+
+        if neLat is not None and neLon is not None and swLat is not None and swLon is not None:
+            oquery_where = (
+                " AND (latitude >= {} AND longitude >= {} "
+                " AND latitude <= {} AND longitude <= {}) "
+            ).format(swLat, swLon, neLat, neLon)
+
+            query_where = query_where + oquery_where
+
+        if oNeLat is not None and oNeLon is not None and oSwLat is not None and oSwLon is not None:
+            oquery_where = (
+                " AND NOT (latitude >= {} AND longitude >= {} "
+                " AND latitude <= {} AND longitude <= {}) "
+            ).format(oSwLat, oSwLon, oNeLat, oNeLon)
+
+            query_where = query_where + oquery_where
+        elif timestamp is not None:
+            oquery_where = " AND trs_quest.quest_timestamp >= {}".format(timestamp)
+            query_where = query_where + oquery_where
+
+        if fence is not None:
+            query_where = query_where + " and ST_CONTAINS(ST_GEOMFROMTEXT( 'POLYGON(( {} ))'), " \
+                                        "POINT(pokestop.latitude, pokestop.longitude))".format(str(fence))
+
+        res = self.execute(query + query_where)
+        logger.info("SQL Ergebnis")
+        logger.info(res)
+
+        for (gym_id, level, spawn, start, end, pokemon_id,cp, move_1, move_2, last_scanned, form, is_exclusive,gender, costume, url, name) in res:
+            if pokemon_id is None:
+                mon = 0
+                form_id = 0
+                costume_id = 0
+            else:
+                mon = "%03d" % pokemon_id
+                form_id = "%02d" % form
+                costume_id = "%02d" % costume
+            questinfo[gym_id] = ({
+                'gym_id': gym_id, 'level': level, 'spawn': spawn, 'start': start, 'end': end, 
+                'quest_pokemon_id': mon, 'quest_pokemon_form_id': form_id,'cp': cp,'move_1': move_1,'move_2': move_2,'gender': gender,
+                'quest_pokemon_costume_id': costume,'is_exclusive': is_exclusive,'last_scanned': last_scanned,'url': url,
+                'name': name})
+        logger.info(questinfo)
+        return questinfo
+    
+    
     def get_pokemon_spawns(self, hours):
         """
         Get Pokemon Spawns for dynamic rarity
