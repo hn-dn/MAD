@@ -27,6 +27,7 @@ class path(object):
             ("/asset/<path:path>", self.pushAssets),
             ("/", self.root),
             ("/quests", self.quest),
+            ("/raids", self.raid),
             ("/quests_pub", self.quest_pub),
             ("/pick_worker", self.pickworker),
             ("/jobstatus", self.jobstatus),
@@ -67,6 +68,14 @@ class path(object):
         return render_template('quests.html', pub=True,
                                responsive=str(self._args.madmin_noresponsive).lower(),
                                title="show daily Quests", fence=fence, stop_fences=stop_fences)
+    
+    def raid(self):
+        fence = request.args.get("fence", None)
+        stop_fences = get_quest_areas(self._mapping_manager, self._data_manager)
+        return render_template('raids.html', pub=False,
+                               responsive=str(self._args.madmin_noresponsive).lower(),
+                               title="show daily Quests", fence=fence, stop_fences=stop_fences)
+
 
     @auth_required
     def pickworker(self):
