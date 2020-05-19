@@ -15,6 +15,7 @@ from mapadroid.utils.gamemechanicutil import get_raid_boss_cp
 from mapadroid.utils.language import i8ln
 from mapadroid.utils.logging import logger
 from mapadroid.utils.questGen import generate_quest
+from mapadroid.utils.raidGen import generate_raid
 from mapadroid.utils.s2Helper import S2Helper
 
 cache = Cache(config={'CACHE_TYPE': 'simple'})
@@ -46,6 +47,7 @@ class map(object):
             ("/get_spawns", self.get_spawns),
             ("/get_gymcoords", self.get_gymcoords),
             ("/get_quests", self.get_quests),
+            ("/get_raids", self.get_raids),
             ("/get_map_mons", self.get_map_mons),
             ("/get_cells", self.get_cells),
             ("/get_stops", self.get_stops),
@@ -255,6 +257,38 @@ class map(object):
 
         return jsonify(coords)
 
+    @auth_required
+    def get_raids(self):
+        coords = []
+
+        fence = request.args.get("fence", None)
+        if fence not in (None, 'None', 'All'):
+            fence = generate_coords_from_geofence(self._mapping_manager, self._data_manager, fence)
+        else:
+            fence = None
+
+        neLat, neLon, swLat, swLon, oNeLat, oNeLon, oSwLat, oSwLon = getBoundParameter(request)
+        timestamp = request.args.get("timestamp", None)
+
+        data = self._db.raids_from_db(
+            neLat=neLat,
+            neLon=neLon,
+            swLat=swLat,
+            swLon=swLon,
+            oNeLat=oNeLat,
+            oNeLon=oNeLon,
+            oSwLat=oSwLat,
+            oSwLon=oSwLon,
+            timestamp=timestamp,
+            fence=fence
+        )
+
+        for stopid in data:
+            quest = data[str(stopid)]
+            coords.append(generate_raid(quest))
+
+        return jsonify(coords)
+    
     @auth_required
     def get_map_mons(self):
         neLat, neLon, swLat, swLon, oNeLat, oNeLon, oSwLat, oSwLon = getBoundParameter(request)
